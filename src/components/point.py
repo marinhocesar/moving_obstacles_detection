@@ -5,7 +5,8 @@ from typing import Tuple
 class Point:
     def __init__(self, range: float, angle: float):
         self.range = range
-        self.angle = angle if angle >= 0 else (2 * math.pi + angle)
+        self.angle = angle
+        # self.angle = angle if angle >= 0 else (2 * math.pi + angle)
         self.x, self.y = self.get_rectangular()
 
     def get_rectangular(self) -> Tuple[float, float]:
