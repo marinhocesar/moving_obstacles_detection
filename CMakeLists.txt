@@ -8,10 +8,10 @@ project(moving_obstacles_detection)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  numpy
+  roscpp
   rospy
-  scipy
-  ydlidar
+  std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,6 +54,21 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
 # )
 
+# add_message_files(
+#   FILES
+#   MovingObstacles.msg
+# )
+
+# message(
+#   FILES
+#   MovingObstacles.msg
+# )
+
+add_message_files(
+  FILES
+  MovingObstacles.msg
+)
+
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -73,6 +88,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

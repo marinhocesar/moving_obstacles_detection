@@ -1,11 +1,13 @@
 import time
 from typing import List
-import ydlidar
+from matplotlib.axes import Axes
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import rospy
 from sensor_msgs.msg import LaserScan
+from moving_obstacles_detection.msg import MovingObstacles
+
 
 from aux.iterative_closest_point import (
     get_avg_displacement_for_significant_points,
@@ -18,26 +20,38 @@ from aux.global_config import GlobalConfig
 from aux import split_and_merge, filtering, point_extractor
 
 
-# configure LiDAR
-ports = ydlidar.lidarPortList()
-port = "/dev/ydlidar"
-for key, value in ports.items():
-    port = value
-
-laser = ydlidar.CYdLidar()
-laser.setlidaropt(ydlidar.LidarPropSerialPort, port)
-laser.setlidaropt(ydlidar.LidarPropSerialBaudrate, 230400)
-laser.setlidaropt(ydlidar.LidarPropLidarType, ydlidar.TYPE_TRIANGLE)
-laser.setlidaropt(ydlidar.LidarPropDeviceType, ydlidar.YDLIDAR_TYPE_SERIAL)
-laser.setlidaropt(ydlidar.LidarPropScanFrequency, 10.0)
-laser.setlidaropt(ydlidar.LidarPropSampleRate, 9)
-laser.setlidaropt(ydlidar.LidarPropSingleChannel, False)
-# scan = ydlidar.LaserScan()
+class Publisher:
+    def __init__(self) -> None:
+        self.pub = rospy.Publisher("/obstacles", MovingObstacles, queue_size=1)
 
 
-# def animate(num, previous_points: dict, significant_buffer: SignificantBuffer):
+class SimpleSubscriber:
+    def __init__(self):
+        self.sub = rospy.Subscriber("/scan", LaserScan, self.callback, queue_size=1)
+        self.points = list()
+
+    def callback(self, msg: LaserScan):
+        ranges = msg.ranges
+        if len(ranges) == 0:
+            return
+        self.points = [
+            Point(range=ranges[i], angle=msg.angle_min + msg.angle_increment * i)
+            for i in range(0, len(ranges))
+        ]
+
+    def printMsg(self):
+        print(self.points)
+
+    def get_points(self) -> List[Point]:
+        return self.points
+
+
 def animate(
-    scan: List[Point], previous_points: dict, significant_buffer: SignificantBuffer
+    scan: List[Point],
+    previous_points: dict,
+    significant_buffer: SignificantBuffer,
+    lidar: Axes,
+    publisher: Publisher,
 ):
     # st = time.time()
     # last = time.time()
@@ -170,6 +184,11 @@ def animate(
         )
         segment.set_average_displacement()
 
+    center_x = list()
+    center_y = list()
+    velocity_x = list()
+    velocity_y = list()
+    speed = list()
     # display of vector
     for segment in joined_segments:
         if segment.avg_displacement is None:
@@ -191,10 +210,10 @@ def animate(
             / 1000
         )
 
-        speed = segment.avg_displacement.range / time_step
+        center_speed = segment.avg_displacement.range / time_step
 
-        # if speed < GlobalConfig.SPEED_THRESHOLD:
-        #     continue
+        if center_speed < GlobalConfig.SPEED_THRESHOLD:
+            continue
 
         lidar.quiver(
             *np.array([segment.center.x, segment.center.y]),
@@ -205,60 +224,29 @@ def animate(
         )
 
         lidar.annotate(
-            str(round(speed, 2)) + " m/s",
+            str(round(center_speed, 2)) + " m/s",
             xy=(segment.center.x, segment.center.y),
         )
+
+        center_x.append(segment.center.x)
+        center_y.append(segment.center.y)
+        velocity_x.append(disp.x/time_step)
+        velocity_y.append(disp.y/time_step)
+        speed.append(center_speed)
+
+    msg = MovingObstacles()
+    msg.number_of_obstacles = len(center_x)
+    msg.center_x = center_x
+    msg.center_y = center_y
+    msg.velocity_x = velocity_x
+    msg.velocity_y = velocity_y
+    msg.speed = speed
+
     et = time.time()
     frame_time = et - st
-    print(frame_time, " s")
+    publisher.pub.publish(msg)
+    print(frame_time, "s")
     fig.canvas.draw()
-
-
-# ret = laser.initialize()
-# if ret:
-#     ret = laser.turnOn()
-#     previous_points = dict()  # dict that stores previous_points[angle] = range
-#     significant_buffer = SignificantBuffer(size=GlobalConfig.BUFFER_SIZE)
-#     st = time.time()
-#     last = st
-#     if ret:
-#         ani = animation.FuncAnimation(
-#             fig,
-#             animate,
-#             interval=GlobalConfig.ANIMATION_INTERVAL,
-#             fargs=(previous_points, significant_buffer),
-#         )
-#         plt.show()
-#     laser.turnOff()
-#     get_displacement_for_significant_points(significant_buffer)
-
-#     # print(f"index: {significant_buffer.last_record % significant_buffer.size}")
-#     # print([len(lista) for lista in significant_buffer.real_significant])
-#     # print([len(lista) for lista in significant_buffer.apparent_significant])
-
-# laser.disconnecting()
-# plt.close()
-
-
-class SimpleSubscriber:
-    def __init__(self):
-        self.sub = rospy.Subscriber("/scan", LaserScan, self.callback, queue_size=1)
-        self.points = list()
-
-    def callback(self, msg: LaserScan):
-        ranges = msg.ranges
-        if len(ranges) == 0:
-            return
-        self.points = [
-            Point(range=ranges[i], angle=msg.angle_min + msg.angle_increment * i)
-            for i in range(0, len(ranges))
-        ]
-
-    def printMsg(self):
-        print(self.points)
-
-    def get_points(self) -> List[Point]:
-        return self.points
 
 
 # Main
@@ -271,6 +259,7 @@ if __name__ == "__main__":
 
     rospy.init_node("simpleSubOOP")
     subObj = SimpleSubscriber()
+    publisher = Publisher()
 
     previous_points = dict()  # dict that stores previous_points[angle] = range
     significant_buffer = SignificantBuffer(size=GlobalConfig.BUFFER_SIZE)
@@ -282,4 +271,6 @@ if __name__ == "__main__":
             scan=subObj.points,
             previous_points=previous_points,
             significant_buffer=significant_buffer,
+            lidar=lidar,
+            publisher=publisher,
         )
