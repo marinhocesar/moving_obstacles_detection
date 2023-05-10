@@ -113,7 +113,8 @@ class Object:
             sum(
                 [
                     real_displacements[displacement].x
-                    for displacement in real_displacements if real_displacements[displacement]
+                    for displacement in real_displacements
+                    if real_displacements[displacement]
                 ]
                 + [
                     apparent_displacements[displacement].x
@@ -224,7 +225,6 @@ class Object:
         return significant
 
     def get_furthermost_from_border(self, points):
-
         curve_length = 0
         for i in range(len(points) - 1):
             curve_length += aux.get_distance_between_data_points(
@@ -272,7 +272,6 @@ class Object:
         return significant_points
 
     def is_boundary_close(self, other_segment):
-
         # checks is the boundaries of a segment are next to the boundaries of other segment
 
         xb = [other_segment.x_pos[0], other_segment.x_pos[-1]]
@@ -294,7 +293,6 @@ class Object:
         return False
 
     def is_internal_significant(self, i, k):
-
         j = i + 1 + k
         points = self.points
 
@@ -332,7 +330,6 @@ class Object:
         return False
 
     def get_angles_between_line_segments(self, i, j):
-
         point: Point = self.points[i]
         prev: Point = self.points[i - 1]
         after: Point = self.points[j]
@@ -364,3 +361,8 @@ class Object:
             distances.append(abs(d))
 
         return distances
+
+    def get_length(self):
+        return aux.get_distance_between_data_points(
+            self.left_boundary, self.right_boundary
+        )

@@ -1,9 +1,11 @@
 import time
 from typing import List
 from matplotlib.axes import Axes
+from matplotlib.collections import PatchCollection
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.patches import Circle
 import rospy
 from sensor_msgs.msg import LaserScan
 from moving_obstacles_detection.msg import MovingObstacles
@@ -215,6 +217,14 @@ def animate(
         if center_speed < GlobalConfig.SPEED_THRESHOLD:
             continue
 
+        circle = Circle(
+                (segment.center.x, segment.center.y),
+                segment.get_length() / 2,
+                color="r",
+                alpha=0.3,
+            )
+        ax.add_patch(circle)
+
         lidar.quiver(
             *np.array([segment.center.x, segment.center.y]),
             np.array(disp.x),
@@ -230,8 +240,8 @@ def animate(
 
         center_x.append(segment.center.x)
         center_y.append(segment.center.y)
-        velocity_x.append(disp.x/time_step)
-        velocity_y.append(disp.y/time_step)
+        velocity_x.append(disp.x / time_step)
+        velocity_y.append(disp.y / time_step)
         speed.append(center_speed)
 
     msg = MovingObstacles()
