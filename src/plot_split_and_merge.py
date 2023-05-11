@@ -1,7 +1,6 @@
 import time
 from typing import List
 from matplotlib.axes import Axes
-from matplotlib.collections import PatchCollection
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -191,6 +190,7 @@ def animate(
     velocity_x = list()
     velocity_y = list()
     speed = list()
+    radius = list()
     # display of vector
     for segment in joined_segments:
         if segment.avg_displacement is None:
@@ -218,11 +218,11 @@ def animate(
             continue
 
         circle = Circle(
-                (segment.center.x, segment.center.y),
-                segment.get_length() / 2,
-                color="r",
-                alpha=0.3,
-            )
+            (segment.center.x, segment.center.y),
+            segment.get_length() / 2,
+            color="r",
+            alpha=0.3,
+        )
         ax.add_patch(circle)
 
         lidar.quiver(
@@ -243,6 +243,7 @@ def animate(
         velocity_x.append(disp.x / time_step)
         velocity_y.append(disp.y / time_step)
         speed.append(center_speed)
+        radius.append(segment.get_length() / 2)
 
     msg = MovingObstacles()
     msg.number_of_obstacles = len(center_x)
@@ -251,6 +252,7 @@ def animate(
     msg.velocity_x = velocity_x
     msg.velocity_y = velocity_y
     msg.speed = speed
+    msg.radius = radius
 
     et = time.time()
     frame_time = et - st
