@@ -1,7 +1,7 @@
 class GlobalConfig:
     SEGMENTATION_THRESHOLD = 0.1
     EXCLUSION_THRESHOLD = 25  # degrees
-    MAX_SKIPPED = -1  # maximum skipped points
+    MAX_SKIPPED = 5  # maximum skipped points
     MIN_ANGLE = 40
     MAX_ANGLE = 140
     ECCENTRICITY_THRESHOLD_COEFFICIENT = 1 / 5

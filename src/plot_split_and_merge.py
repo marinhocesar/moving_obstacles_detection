@@ -1,10 +1,11 @@
+import math
 import time
 from typing import List
 from matplotlib.axes import Axes
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, Rectangle
 import rospy
 from sensor_msgs.msg import LaserScan
 from moving_obstacles_detection.msg import MovingObstacles
@@ -21,9 +22,6 @@ from components.point import Point
 from components.object import Object
 from aux.global_config import GlobalConfig
 from aux import split_and_merge, point_extractor
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 class Publisher:
@@ -89,9 +87,7 @@ def animate(
     history, structured_data = icp(reference_points=reference_points, points=points)
     structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
 
-    segments = split_and_merge.segment_lidar_data(
-        scan_points=structured_data
-    )
+    segments = split_and_merge.segment_lidar_data(scan_points=structured_data)
     joined_segments = split_and_merge.join_segments_that_have_close_boundaries(
         segments=segments
     )
@@ -205,6 +201,40 @@ def animate(
     # display of vector
     time_step = significant_buffer.get_time_between()
     for segment in joined_segments:
+        shape = segment.get_shape()
+
+        if segment.is_eccentric is True:
+            print(segment.is_eccentric)
+            print(segment.get_shape().shape_type)
+            print("))))))))))))))))))0")
+        shape_patch = None
+        if shape.shape_type == "circle":
+            shape_patch = Circle(
+                (shape.center.x, shape.center.y),
+                shape.significant_length / 2,
+                color="r",
+                alpha=0.3,
+            )
+        if shape.shape_type == "rectangle":
+            if shape.angle:
+                shape_patch = Rectangle(
+                    xy=(shape.center.x, shape.center.y),
+                    width=shape.significant_length,
+                    height=shape.significant_length,
+                    angle=180 * shape.angle / math.pi,
+                    color="r",
+                    alpha=0.3,
+                )
+            else:
+                shape_patch = Rectangle(
+                    xy=(shape.center.x, shape.center.y),
+                    width=shape.significant_length,
+                    height=shape.significant_length,
+                    color="r",
+                    alpha=0.3,
+                )
+
+        ax.add_patch(shape_patch)
         if segment.avg_displacement is None:
             continue
         if segment.avg_displacement == Point(0, 0):
@@ -214,16 +244,9 @@ def animate(
 
         center_speed = segment.avg_displacement.range / time_step
 
+
         if center_speed < GlobalConfig.SPEED_THRESHOLD:
             continue
-
-        circle = Circle(
-            (segment.center.x, segment.center.y),
-            segment.get_length() / 2,
-            color="r",
-            alpha=0.3,
-        )
-        ax.add_patch(circle)
 
         lidar.quiver(
             *np.array([segment.center.x, segment.center.y]),
@@ -291,3 +314,5 @@ if __name__ == "__main__":
             lidar=lidar,
             publisher=publisher,
         )
+
+# TODO: add proper boundaries to message

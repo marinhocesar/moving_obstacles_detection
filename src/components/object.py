@@ -8,6 +8,20 @@ from .point import Point
 from aux import aux_functions as aux
 
 
+class Shape:
+    def __init__(
+        self,
+        shape_type: str,
+        significant_length: float,
+        center: Point,
+        angle: Optional[float] = None,
+    ):
+        self.shape_type = shape_type
+        self.significant_length = significant_length
+        self.angle = angle
+        self.center = center
+
+
 class Object:
     def __init__(self, points: List[Point]):
         self.points = points
@@ -62,6 +76,7 @@ class Object:
         self.avg_displacement: Optional[Point] = None
         self.velocity_x: List[float] = list()
         self.velocity_y: List[float] = list()
+        self.is_eccentric = False
 
     def register_displacement_real_significant_points(
         self, real_displacements: "dict[Point, Point]"
@@ -270,6 +285,7 @@ class Object:
 
         if distance_to_line > threshold:
             significant_points.append(point)
+            self.is_eccentric = True
 
         return significant_points
 
@@ -367,4 +383,51 @@ class Object:
     def get_length(self):
         return aux.get_distance_between_data_points(
             self.left_boundary, self.right_boundary
+        )
+
+    def get_shape(self):
+        if len(self.significant_inside) == 0:
+            return Shape(
+                shape_type="rectangle",
+                center=self.right_boundary,
+                significant_length=self.get_length(),
+                angle=aux.get_angles_between_three_points(
+                    [Point(0, 0), Point.init_from_rectangular(1, 0), self.left_boundary]
+                ),
+            )
+
+        if self.is_eccentric is False and len(self.significant_inside) == 1:
+            point_angle = (
+                self.left_boundary
+                if self.left_boundary.range > self.right_boundary.range
+                else self.right_boundary
+            )
+            angle = (
+                aux.get_angles_between_three_points(
+                    [Point(0, 0), self.significant_inside[0], point_angle]
+                ),
+            )
+            return Shape(
+                shape_type="rectangle",
+                center=self.significant_inside[0],
+                significant_length=self.get_length(),
+                angle=aux.get_angles_between_three_points(
+                    [Point(0, 0), self.significant_inside[0], self.left_boundary]
+                ),
+            )
+
+        if self.is_eccentric is True and len(self.significant_inside) == 1:
+            center_offset = (self.get_length() / 2) * 1.1
+            return Shape(
+                shape_type="circle",
+                center=Point(
+                    range=self.center.range + center_offset, angle=self.center.angle
+                ),
+                significant_length=self.get_length(),
+            )
+
+        return Shape(
+            shape_type="circle",
+            center=self.center,
+            significant_length=self.get_length(),
         )

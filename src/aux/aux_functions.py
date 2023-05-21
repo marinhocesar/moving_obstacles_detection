@@ -67,3 +67,26 @@ def get_points_from_numpy_array(numpy_array):
     ]
     points.sort(key=lambda x: x.angle)
     return points
+
+
+def get_angles_between_three_points(points: List[Point]):
+    assert len(points) == 3
+
+    point: Point = points[1]
+    prev: Point = points[0]
+    after: Point = points[2]
+
+    point_x, point_y = point.get_rectangular()
+    prev_x, prev_y = prev.get_rectangular()
+    after_x, after_y = after.get_rectangular()
+
+    m1, m2 = 0, 0
+    if point_x - prev_x != 0:
+        m1 = (point_y - prev_y) / (point_x - prev_x)
+    if after_x - point_x != 0:
+        m2 = (after_y - point_y) / (after_x - point_x)
+
+    tan = (m2 - m1) / (1 + m1 * m2)
+    angle_between = math.atan(tan)
+
+    return angle_between
