@@ -5,6 +5,7 @@ class GlobalConfig:
     MIN_ANGLE = 40
     MAX_ANGLE = 140
     ECCENTRICITY_THRESHOLD_COEFFICIENT = 1 / 5
+    MIN_RANGE = 0.1
     MAX_RANGE = 0.75
     SHOULD_JOIN = False
     MAX_ALLOWED_MEASURE_DIFF = 0.1
@@ -22,12 +23,15 @@ class GlobalConfig:
     # number of adjacent points to be checked while wanting to determine if a point is apparent or real significant
     NEIGHBORHOOD_CHECK_FOR_APPARENT_SIGNIFICANT = 10
 
-    DIFFERENCE_FOR_DISPLACEMENT = 1
-    BUFFER_SIZE = 5
-    DISPLACEMENT_THRESHOLD = 0.03
-    ANIMATION_INTERVAL = 50  # Delay between frames in milliseconds.
+    DIFFERENCE_FOR_DISPLACEMENT = 2
+    BUFFER_SIZE = 10
+    DISPLACEMENT_THRESHOLD = 0.1
+    VARIANCE_THRESHOLD = 0.02
+    ANIMATION_INTERVAL = 75  # Delay between frames in milliseconds.
 
     VECTOR_SCALING = 1
 
     MAX_MATCHING_DISTANCE = 0.25
-    SPEED_THRESHOLD = 0.5  # m/s
+    SPEED_THRESHOLD = 0.1  # m/s
+
+    ICP_TOLERANCE = 0.000001

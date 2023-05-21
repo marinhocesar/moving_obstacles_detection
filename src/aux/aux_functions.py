@@ -1,7 +1,9 @@
 from decimal import Decimal
 import math
-from components.object import Object
+from typing import List, Optional
+import numpy as np
 
+from components.object import Object
 from components.point import Point
 
 
@@ -11,7 +13,6 @@ def linear_function(x, a, b):
 
 
 def get_distance_between_data_points(first_data_point: Point, second_data_point: Point):
-
     return math.sqrt(
         (second_data_point.x - first_data_point.x) ** 2
         + (second_data_point.y - first_data_point.y) ** 2
@@ -49,7 +50,20 @@ def get_distance_to_line(segment: Object, point: Point):
     return d
 
 
-def are_same_point(point1: Point, point2: Point):
+def are_same_point(point1: Point, point2: Optional[Point]):
     if isinstance(point1, Point) and isinstance(point2, Point):
         return point1 == point2
     return False
+
+
+def get_numpy_array_from_points(points: List[Point]):
+    array = [(point.x, point.y) for point in points]
+    return np.array(array)
+
+
+def get_points_from_numpy_array(numpy_array):
+    points = [
+        Point.init_from_rectangular(x=point[0], y=point[1]) for point in numpy_array
+    ]
+    points.sort(key=lambda x: x.angle)
+    return points

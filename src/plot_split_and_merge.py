@@ -8,6 +8,8 @@ from matplotlib.patches import Circle
 import rospy
 from sensor_msgs.msg import LaserScan
 from moving_obstacles_detection.msg import MovingObstacles
+from aux.icp import icp
+from aux import aux_functions as aux
 
 
 from aux.iterative_closest_point import (
@@ -18,7 +20,10 @@ from components.buffer import SignificantBuffer
 from components.point import Point
 from components.object import Object
 from aux.global_config import GlobalConfig
-from aux import split_and_merge, filtering, point_extractor
+from aux import split_and_merge, point_extractor
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 class Publisher:
@@ -49,7 +54,6 @@ class SimpleSubscriber:
 
 def animate(
     scan: List[Point],
-    previous_points: dict,
     significant_buffer: SignificantBuffer,
     lidar: Axes,
     publisher: Publisher,
@@ -75,12 +79,18 @@ def animate(
 
     # configure data for visualization
     structured_data = [Point(range=point.range, angle=point.angle) for point in scan]
-    filtered_data = filtering.filter_data(data=structured_data)
+    if significant_buffer.last_record > 1:
+        reference_points = aux.get_numpy_array_from_points(
+            points=significant_buffer.get_lidar()
+        )
+    else:
+        reference_points = aux.get_numpy_array_from_points(points=structured_data)
+    points = aux.get_numpy_array_from_points(points=structured_data)
+    history, structured_data = icp(reference_points=reference_points, points=points)
+    structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
+
     segments = split_and_merge.segment_lidar_data(
-        scan_points=filtered_data, previous_points=previous_points
-    )
-    previous_points = filtering.get_points_from_segments(
-        segments=segments, dict=previous_points
+        scan_points=structured_data
     )
     joined_segments = split_and_merge.join_segments_that_have_close_boundaries(
         segments=segments
@@ -124,7 +134,7 @@ def animate(
         if segment.real_significant_points:
             real_significant = Object(points=segment.real_significant_points)
             all_real_significant += real_significant.points
-            lidar.scatter(real_significant.x_pos, real_significant.y_pos, color="red")
+            lidar.scatter(real_significant.x_pos, real_significant.y_pos, color="red")  # type: ignore
 
         if segment.apparent_significant_points:
             apparent_significant = Object(points=segment.apparent_significant_points)
@@ -144,6 +154,7 @@ def animate(
         real=all_real_significant,
         apparent=all_apparent_significant,
         time=time.time() - st,
+        lidar=structured_data,
     )
 
     # get displacements
@@ -192,25 +203,14 @@ def animate(
     speed = list()
     radius = list()
     # display of vector
+    time_step = significant_buffer.get_time_between()
     for segment in joined_segments:
         if segment.avg_displacement is None:
             continue
         if segment.avg_displacement == Point(0, 0):
             continue
 
-        # segment.set_velocity_vector_for_display()
-        # x_vel = segment.velocity_x
-        # y_vel = segment.velocity_y
-        # lidar.plot(x_vel, y_vel, "-", color="black")
-
         disp = segment.avg_displacement
-
-        # time step in seconds
-        time_step = (
-            GlobalConfig.DIFFERENCE_FOR_DISPLACEMENT
-            * GlobalConfig.ANIMATION_INTERVAL
-            / 1000
-        )
 
         center_speed = segment.avg_displacement.range / time_step
 
@@ -254,10 +254,17 @@ def animate(
     msg.speed = speed
     msg.radius = radius
 
-    et = time.time()
-    frame_time = et - st
+    time_step = (
+        GlobalConfig.DIFFERENCE_FOR_DISPLACEMENT
+        * GlobalConfig.ANIMATION_INTERVAL
+        / 1000
+    )
     publisher.pub.publish(msg)
-    print(frame_time, "s")
+    # et = time.time()
+    # frame_time = et - st
+    # print("calculated", time_step, "s")
+    # print((significant_buffer.get_time_between()), "s")
+    # print("total", frame_time, "s")
     fig.canvas.draw()
 
 
@@ -273,7 +280,6 @@ if __name__ == "__main__":
     subObj = SimpleSubscriber()
     publisher = Publisher()
 
-    previous_points = dict()  # dict that stores previous_points[angle] = range
     significant_buffer = SignificantBuffer(size=GlobalConfig.BUFFER_SIZE)
     st = time.time()
     plt.show()
@@ -281,7 +287,6 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         animate(
             scan=subObj.points,
-            previous_points=previous_points,
             significant_buffer=significant_buffer,
             lidar=lidar,
             publisher=publisher,

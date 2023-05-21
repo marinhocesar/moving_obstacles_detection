@@ -43,7 +43,9 @@ class Object:
         self.y_line = list()
         if self.n > 1:
             params, extra = optimize.curve_fit(
-                f=aux.linear_function, xdata=self.x_pos, ydata=self.y_pos
+                f=aux.linear_function,
+                xdata=self.x_pos,
+                ydata=self.y_pos,
             )
             self.a_coeff, self.c_coeff = params
             self.b_coeff = -1

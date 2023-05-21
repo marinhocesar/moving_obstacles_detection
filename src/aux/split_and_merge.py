@@ -1,9 +1,10 @@
 import math
-from typing import List
+from typing import List, Optional
 
 from aux import aux_functions as aux
 from aux.global_config import GlobalConfig
 from components.object import Object
+from components.point import Point
 
 
 def get_angle_for_exclusion(first_data_point, second_data_point):
@@ -43,7 +44,6 @@ def should_be_excluded(current, last_in_object, last_evaluated):
 
 
 def join_segments_that_have_close_boundaries(segments: List[Object]) -> List[Object]:
-
     if GlobalConfig.SHOULD_JOIN is False:
         return segments
 
@@ -81,25 +81,23 @@ def join_segments_that_have_close_boundaries(segments: List[Object]) -> List[Obj
     return joined
 
 
-def segment_lidar_data(scan_points, previous_points):
+def segment_lidar_data(scan_points: List[Point]):
     segments = []
     segment = []
     last_evaluated_point = scan_points[0]
-    last_in_object = None
+    last_in_object: Optional[Point] = None
     skipped_points = 0
     for current_point in scan_points:
-        last_point_range = last_evaluated_point.range
-        current_point_range = current_point.range
-        theta = current_point.angle
-        alpha = last_evaluated_point.angle
-        distance_between_last_and_current_point = math.sqrt(
-            last_point_range * last_point_range
-            + current_point_range * current_point_range
-            - 2 * last_point_range * current_point_range * math.cos(theta - alpha)
+        distance_between_last_and_current_point = aux.get_distance_between_data_points(
+            last_evaluated_point, current_point
         )
 
         if current_point.range == 0 or current_point.range == -0:
             # ignore points that have range equal to zero (exactly)
+            continue
+
+        if current_point.range < GlobalConfig.MIN_RANGE:
+            # ignore points that have range close to zero
             continue
 
         # compares to the last range measurement for the same angle
@@ -142,13 +140,10 @@ def segment_lidar_data(scan_points, previous_points):
                 last_evaluated_point = current_point
                 continue
 
-            if (
-                skipped_points < GlobalConfig.MAX_SKIPPED
-                and should_be_excluded(
-                    current=current_point,
-                    last_evaluated=last_evaluated_point,
-                    last_in_object=last_in_object,
-                )
+            if skipped_points < GlobalConfig.MAX_SKIPPED and should_be_excluded(
+                current=current_point,
+                last_evaluated=last_evaluated_point,
+                last_in_object=last_in_object,
             ):
                 skipped_points += 1
                 pass
