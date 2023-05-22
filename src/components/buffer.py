@@ -30,12 +30,12 @@ class SignificantBuffer:
         self.displacement_apparent[index] = apparent
 
     def register_significant(
-        self, real: List[Point], apparent: List[Point], time: float, lidar: List[Point]
+        self, real: List[Point], apparent: List[Point], lidar: List[Point]
     ) -> None:
         self.last_record += 1
         index = self.last_record % self.size
 
-        self.time[index] = time
+        self.time[index] = self.time[index-1] + 1 / GlobalConfig.LIDAR_FREQUENCY
 
         self.__register_real_significant(points_to_save=real, record_position=index)
         self.__register_apparent_significant(

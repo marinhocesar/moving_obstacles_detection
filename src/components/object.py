@@ -17,7 +17,7 @@ class Shape:
         angle: Optional[float] = None,
     ):
         self.shape_type = shape_type
-        self.significant_length = significant_length
+        self.significant_length = (1 + GlobalConfig.BOUNDARY_SAFETY_COEFF) * significant_length
         self.angle = angle
         self.center = center
 
@@ -387,37 +387,37 @@ class Object:
 
     def get_shape(self):
         if len(self.significant_inside) == 0:
+            point_angle = self.right_boundary
+            angle = aux.get_angles_between_three_points(
+                [Point(0, 0), self.center, point_angle]
+            )
+            if self.right_boundary.range < self.left_boundary.range:
+                angle -= math.pi/2
+            else:
+                angle += math.pi/2
+
             return Shape(
                 shape_type="rectangle",
-                center=self.right_boundary,
+                center=point_angle,
                 significant_length=self.get_length(),
-                angle=aux.get_angles_between_three_points(
-                    [Point(0, 0), Point.init_from_rectangular(1, 0), self.left_boundary]
-                ),
+                angle=angle,
             )
 
         if self.is_eccentric is False and len(self.significant_inside) == 1:
-            point_angle = (
-                self.left_boundary
-                if self.left_boundary.range > self.right_boundary.range
-                else self.right_boundary
+            point_angle = self.right_boundary
+            angle = math.pi * (7/10) + aux.get_angles_between_three_points(
+                [Point(0, 0), self.center, point_angle]
             )
-            angle = (
-                aux.get_angles_between_three_points(
-                    [Point(0, 0), self.significant_inside[0], point_angle]
-                ),
-            )
+
             return Shape(
                 shape_type="rectangle",
-                center=self.significant_inside[0],
+                center=point_angle,
                 significant_length=self.get_length(),
-                angle=aux.get_angles_between_three_points(
-                    [Point(0, 0), self.significant_inside[0], self.left_boundary]
-                ),
+                angle=angle,
             )
 
         if self.is_eccentric is True and len(self.significant_inside) == 1:
-            center_offset = (self.get_length() / 2) * 1.1
+            center_offset = (self.get_length() / 2) * (1 + GlobalConfig.BOUNDARY_SAFETY_COEFF)
             return Shape(
                 shape_type="circle",
                 center=Point(

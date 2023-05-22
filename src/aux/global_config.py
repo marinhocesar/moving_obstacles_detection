@@ -27,11 +27,12 @@ class GlobalConfig:
     BUFFER_SIZE = 10
     DISPLACEMENT_THRESHOLD = 0.1
     VARIANCE_THRESHOLD = 0.02
-    ANIMATION_INTERVAL = 75  # Delay between frames in milliseconds.
+    ANIMATION_INTERVAL = 1  # Delay between frames in milliseconds.
 
     VECTOR_SCALING = 1
 
     MAX_MATCHING_DISTANCE = 0.25
     SPEED_THRESHOLD = 0.1  # m/s
 
-    ICP_TOLERANCE = 0.000001
+    BOUNDARY_SAFETY_COEFF = 0.1
+    LIDAR_FREQUENCY = 10  # Hz

@@ -22,6 +22,9 @@ from components.point import Point
 from components.object import Object
 from aux.global_config import GlobalConfig
 from aux import split_and_merge, point_extractor
+import warnings
+
+warnings.simplefilter("ignore")
 
 
 class Publisher:
@@ -56,11 +59,6 @@ def animate(
     lidar: Axes,
     publisher: Publisher,
 ):
-    # st = time.time()
-    # last = time.time()
-    # r = laser.doProcessSimple(scan)
-    # configure plot
-    # print(scan)
     if not scan:
         return
 
@@ -149,7 +147,6 @@ def animate(
     significant_buffer.register_significant(
         real=all_real_significant,
         apparent=all_apparent_significant,
-        time=time.time() - st,
         lidar=structured_data,
     )
 
@@ -202,11 +199,14 @@ def animate(
     time_step = significant_buffer.get_time_between()
     for segment in joined_segments:
         shape = segment.get_shape()
+        if segment.avg_displacement is None:
+            continue
+        if segment.avg_displacement == Point(0, 0):
+            continue
+        disp = segment.avg_displacement
 
-        if segment.is_eccentric is True:
-            print(segment.is_eccentric)
-            print(segment.get_shape().shape_type)
-            print("))))))))))))))))))0")
+        center_speed = segment.avg_displacement.range / time_step
+
         shape_patch = None
         if shape.shape_type == "circle":
             shape_patch = Circle(
@@ -215,41 +215,26 @@ def animate(
                 color="r",
                 alpha=0.3,
             )
-        if shape.shape_type == "rectangle":
-            if shape.angle:
-                shape_patch = Rectangle(
-                    xy=(shape.center.x, shape.center.y),
-                    width=shape.significant_length,
-                    height=shape.significant_length,
-                    angle=180 * shape.angle / math.pi,
-                    color="r",
-                    alpha=0.3,
-                )
-            else:
-                shape_patch = Rectangle(
-                    xy=(shape.center.x, shape.center.y),
-                    width=shape.significant_length,
-                    height=shape.significant_length,
-                    color="r",
-                    alpha=0.3,
-                )
+        else:
+            shape_patch = Rectangle(
+                xy=(shape.center.x, shape.center.y),
+                width=shape.significant_length,
+                height=shape.significant_length,
+                angle=180 * (segment.center.angle + shape.angle) / math.pi,  # type: ignore
+                color="r",
+                alpha=0.3,
+            )
 
-        ax.add_patch(shape_patch)
-        if segment.avg_displacement is None:
-            continue
-        if segment.avg_displacement == Point(0, 0):
-            continue
-
-        disp = segment.avg_displacement
-
-        center_speed = segment.avg_displacement.range / time_step
-
+        if shape_patch:
+            ax.add_patch(shape_patch)
 
         if center_speed < GlobalConfig.SPEED_THRESHOLD:
             continue
 
+        shape_center = shape_patch.get_center()
+
         lidar.quiver(
-            *np.array([segment.center.x, segment.center.y]),
+            *np.array([shape_center[0], shape_center[1]]),
             np.array(disp.x),
             np.array(disp.y),
             color="black",
@@ -261,8 +246,8 @@ def animate(
             xy=(segment.center.x, segment.center.y),
         )
 
-        center_x.append(segment.center.x)
-        center_y.append(segment.center.y)
+        center_x.append(shape_center[0])
+        center_y.append(shape_center[1])
         velocity_x.append(disp.x / time_step)
         velocity_y.append(disp.y / time_step)
         speed.append(center_speed)
@@ -283,12 +268,9 @@ def animate(
         / 1000
     )
     publisher.pub.publish(msg)
-    # et = time.time()
-    # frame_time = et - st
-    # print("calculated", time_step, "s")
-    # print((significant_buffer.get_time_between()), "s")
-    # print("total", frame_time, "s")
-    fig.canvas.draw()
+    et = time.time()
+    frame_time = et - st
+    print("total", frame_time, "s")
 
 
 # Main
@@ -296,7 +278,6 @@ if __name__ == "__main__":
     # configure plot
     fig = plt.figure()
     lidar = plt.subplot()
-    plt.ion()
     ax = plt.gca()
 
     rospy.init_node("simpleSubOOP")
@@ -304,15 +285,15 @@ if __name__ == "__main__":
     publisher = Publisher()
 
     significant_buffer = SignificantBuffer(size=GlobalConfig.BUFFER_SIZE)
-    st = time.time()
-    plt.show()
 
     while not rospy.is_shutdown():
+        st = time.time()
         animate(
             scan=subObj.points,
             significant_buffer=significant_buffer,
             lidar=lidar,
             publisher=publisher,
         )
+        plt.pause(GlobalConfig.ANIMATION_INTERVAL / 1000)
 
 # TODO: add proper boundaries to message
