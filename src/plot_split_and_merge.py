@@ -1,16 +1,14 @@
-import math
 import time
 from typing import List
 from matplotlib.axes import Axes
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from matplotlib.patches import Circle, Rectangle
 import rospy
 from sensor_msgs.msg import LaserScan
 from moving_obstacles_detection.msg import MovingObstacles
 from aux import aux_functions as aux
-# from aux.icp import icp
+from aux.icp import icp
 
 
 from aux.iterative_closest_point import (
@@ -75,18 +73,18 @@ def animate(
 
     # configure data for visualization
     structured_data = [Point(range=point.range, angle=point.angle) for point in scan]
-    
+
     # Performing ICP before segmentation
 
-    # if significant_buffer.last_record > 1:
-    #     reference_points = aux.get_numpy_array_from_points(
-    #         points=significant_buffer.get_lidar()
-    #     )
-    # else:
-    #     reference_points = aux.get_numpy_array_from_points(points=structured_data)
-    # points = aux.get_numpy_array_from_points(points=structured_data)
-    # history, structured_data = icp(reference_points=reference_points, points=points)
-    # structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
+    if significant_buffer.last_record > 1:
+        reference_points = aux.get_numpy_array_from_points(
+            points=significant_buffer.get_lidar()
+        )
+    else:
+        reference_points = aux.get_numpy_array_from_points(points=structured_data)
+    points = aux.get_numpy_array_from_points(points=structured_data)
+    history, structured_data = icp(reference_points=reference_points, points=points)
+    structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
 
     segments = split_and_merge.segment_lidar_data(scan_points=structured_data)
     joined_segments = split_and_merge.join_segments_that_have_close_boundaries(

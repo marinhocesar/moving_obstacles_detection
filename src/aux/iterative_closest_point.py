@@ -1,6 +1,6 @@
 import math
 from typing import List, Tuple
-from aux.icp import icp
+# from aux.icp import icp
 
 from aux.global_config import GlobalConfig
 from components.buffer import SignificantBuffer
@@ -8,91 +8,91 @@ from aux import aux_functions as aux
 from components.point import Point
 
 
+# def get_displacement_for_significant_points(
+#     point_cloud_history: SignificantBuffer,
+# ) -> "Tuple[dict[Point, Point], dict[Point, Point]]":
+#     buffer_size = point_cloud_history.size
+#     current_record_n = point_cloud_history.last_record
+#     current_record_idx = current_record_n % buffer_size
+#     all_real_significant = point_cloud_history.real_significant
+#     all_apparent_significant = point_cloud_history.apparent_significant
+#     last_real_significant = all_real_significant[current_record_idx]
+#     last_apparent_significant = all_apparent_significant[current_record_idx]
+#     interval_size = GlobalConfig.DIFFERENCE_FOR_DISPLACEMENT
+
+#     if current_record_n < interval_size:
+#         n_records = current_record_n
+#     else:
+#         n_records = interval_size
+
+#     displacement_real_significant = {
+#         point: Point(0, 0) for point in last_real_significant
+#     }
+#     displacement_apparent_significant = {
+#         point: Point(0, 0) for point in last_apparent_significant
+#     }
+
+#     if current_record_n == 0:
+#         no_displacement_real = {
+#             point: Point(range=0, angle=0) for point in last_real_significant
+#         }
+#         no_displacement_apparent = {
+#             point: Point(range=0, angle=0) for point in last_apparent_significant
+#         }
+#         return no_displacement_real, no_displacement_apparent
+
+#     idx = (current_record_idx - n_records + 1) % buffer_size
+#     compare_real_sig = all_real_significant[idx]
+#     compare_apparent_sig = all_apparent_significant[idx]
+
+#     A_real = aux.get_numpy_array_from_points(
+#         points=last_real_significant + last_apparent_significant
+#     )
+#     B_real = aux.get_numpy_array_from_points(
+#         points=compare_real_sig + compare_apparent_sig
+#     )
+
+#     history, C_real = icp(A_real, B_real, point_pairs_threshold=10)
+
+#     compare_real_sig = aux.get_points_from_numpy_array(numpy_array=C_real)
+
+#     for point in last_real_significant:
+#         distances_real_sig = [
+#             aux.get_distance_between_data_points(point, other_point)
+#             for other_point in (compare_real_sig + compare_apparent_sig)
+#         ]
+#         closest_real_point = (compare_real_sig + compare_apparent_sig)[
+#             distances_real_sig.index(min(distances_real_sig))
+#         ]
+
+#         displacement = get_displacement(
+#             first_point=point,
+#             second_point=closest_real_point,
+#         )
+
+#         displacement_real_significant[point] = displacement
+
+#     # evaluating apparent significant points
+#     for point in last_apparent_significant:
+#         distances_real_sig = [
+#             aux.get_distance_between_data_points(point, other_point)
+#             for other_point in (compare_real_sig + compare_apparent_sig)
+#         ]
+#         closest_real_point = (compare_real_sig + compare_apparent_sig)[
+#             distances_real_sig.index(min(distances_real_sig))
+#         ]
+
+#         displacement = get_displacement(
+#             first_point=point,
+#             second_point=closest_real_point,
+#         )
+
+#         displacement_apparent_significant[point] = displacement
+
+#     return displacement_real_significant, displacement_apparent_significant
+
+
 def get_displacement_for_significant_points(
-    point_cloud_history: SignificantBuffer,
-) -> "Tuple[dict[Point, Point], dict[Point, Point]]":
-    buffer_size = point_cloud_history.size
-    current_record_n = point_cloud_history.last_record
-    current_record_idx = current_record_n % buffer_size
-    all_real_significant = point_cloud_history.real_significant
-    all_apparent_significant = point_cloud_history.apparent_significant
-    last_real_significant = all_real_significant[current_record_idx]
-    last_apparent_significant = all_apparent_significant[current_record_idx]
-    interval_size = GlobalConfig.DIFFERENCE_FOR_DISPLACEMENT
-
-    if current_record_n < interval_size:
-        n_records = current_record_n
-    else:
-        n_records = interval_size
-
-    displacement_real_significant = {
-        point: Point(0, 0) for point in last_real_significant
-    }
-    displacement_apparent_significant = {
-        point: Point(0, 0) for point in last_apparent_significant
-    }
-
-    if current_record_n == 0:
-        no_displacement_real = {
-            point: Point(range=0, angle=0) for point in last_real_significant
-        }
-        no_displacement_apparent = {
-            point: Point(range=0, angle=0) for point in last_apparent_significant
-        }
-        return no_displacement_real, no_displacement_apparent
-
-    idx = (current_record_idx - n_records + 1) % buffer_size
-    compare_real_sig = all_real_significant[idx]
-    compare_apparent_sig = all_apparent_significant[idx]
-
-    A_real = aux.get_numpy_array_from_points(
-        points=last_real_significant + last_apparent_significant
-    )
-    B_real = aux.get_numpy_array_from_points(
-        points=compare_real_sig + compare_apparent_sig
-    )
-
-    history, C_real = icp(A_real, B_real, point_pairs_threshold=10)
-
-    compare_real_sig = aux.get_points_from_numpy_array(numpy_array=C_real)
-
-    for point in last_real_significant:
-        distances_real_sig = [
-            aux.get_distance_between_data_points(point, other_point)
-            for other_point in (compare_real_sig + compare_apparent_sig)
-        ]
-        closest_real_point = (compare_real_sig + compare_apparent_sig)[
-            distances_real_sig.index(min(distances_real_sig))
-        ]
-
-        displacement = get_displacement(
-            first_point=point,
-            second_point=closest_real_point,
-        )
-
-        displacement_real_significant[point] = displacement
-
-    # evaluating apparent significant points
-    for point in last_apparent_significant:
-        distances_real_sig = [
-            aux.get_distance_between_data_points(point, other_point)
-            for other_point in (compare_real_sig + compare_apparent_sig)
-        ]
-        closest_real_point = (compare_real_sig + compare_apparent_sig)[
-            distances_real_sig.index(min(distances_real_sig))
-        ]
-
-        displacement = get_displacement(
-            first_point=point,
-            second_point=closest_real_point,
-        )
-
-        displacement_apparent_significant[point] = displacement
-
-    return displacement_real_significant, displacement_apparent_significant
-
-
-def test(
     point_cloud_history: SignificantBuffer,
 ) -> "Tuple[dict[Point, Point], dict[Point, Point]]":
     buffer_size = point_cloud_history.size
