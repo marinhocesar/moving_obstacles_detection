@@ -2,24 +2,10 @@ import math
 from scipy import optimize
 from typing import List, Optional
 
-from aux.global_config import GlobalConfig
-
+from components.shape import Shape
 from .point import Point
 from aux import aux_functions as aux
-
-
-class Shape:
-    def __init__(
-        self,
-        shape_type: str,
-        significant_length: float,
-        center: Point,
-        angle: Optional[float] = None,
-    ):
-        self.shape_type = shape_type
-        self.significant_length = (1 + GlobalConfig.BOUNDARY_SAFETY_COEFF) * significant_length
-        self.angle = angle
-        self.center = center
+from aux.global_config import GlobalConfig
 
 
 class Object:
@@ -375,7 +361,6 @@ class Object:
 
             prev_point = self.points[idx - 1]
             d = aux.get_distance_between_data_points(prev_point, point)
-            # d = point.range - prev_point.range
             distances.append(abs(d))
 
         return distances
@@ -392,9 +377,9 @@ class Object:
                 [Point(0, 0), self.center, point_angle]
             )
             if self.right_boundary.range < self.left_boundary.range:
-                angle -= math.pi/2
+                angle -= math.pi / 2
             else:
-                angle += math.pi/2
+                angle += math.pi / 2
 
             return Shape(
                 shape_type="rectangle",
@@ -404,8 +389,35 @@ class Object:
             )
 
         if self.is_eccentric is False and len(self.significant_inside) == 1:
+            # if (
+            #     self.significant_inside[0].get_projection()
+            #     <= self.left_boundary.get_projection()
+            #     or self.significant_inside[0].get_projection()
+            #     <= self.right_boundary.get_projection()
+            # ):
+            #     r_b = self.right_boundary
+            #     l_b = self.left_boundary
+            #     angle = math.atan2((r_b.y - l_b.y), (r_b.x - l_b.x))
+            #     height = aux.get_distance_between_data_points(
+            #         self.center, self.significant_inside[0]
+            #     )
+            #     distance_to_line = aux.get_distance_to_line(
+            #         point=self.significant_inside[0], segment=Object([r_b, l_b])
+            #     )
+            #     center = Point(
+            #         range=self.significant_inside[0].range - distance_to_line,
+            #         angle=self.significant_inside[0].angle,
+            #     )
+            #     return Shape(
+            #         shape_type="ellipse",
+            #         center=center,
+            #         angle=180 * angle / math.pi,
+            #         significant_length=self.get_length(),
+            #         secondary_length=height,
+            #     )
+
             point_angle = self.right_boundary
-            angle = math.pi * (7/10) + aux.get_angles_between_three_points(
+            angle = math.pi * (7 / 10) + aux.get_angles_between_three_points(
                 [Point(0, 0), self.center, point_angle]
             )
 
@@ -417,7 +429,9 @@ class Object:
             )
 
         if self.is_eccentric is True and len(self.significant_inside) == 1:
-            center_offset = (self.get_length() / 2) * (1 + GlobalConfig.BOUNDARY_SAFETY_COEFF)
+            center_offset = (self.get_length() / 2) * (
+                1 + GlobalConfig.BOUNDARY_SAFETY_COEFF
+            )
             return Shape(
                 shape_type="circle",
                 center=Point(

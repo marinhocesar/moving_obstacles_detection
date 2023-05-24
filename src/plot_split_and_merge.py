@@ -9,8 +9,8 @@ from matplotlib.patches import Circle, Rectangle
 import rospy
 from sensor_msgs.msg import LaserScan
 from moving_obstacles_detection.msg import MovingObstacles
-from aux.icp import icp
 from aux import aux_functions as aux
+# from aux.icp import icp
 
 
 from aux.iterative_closest_point import (
@@ -75,15 +75,18 @@ def animate(
 
     # configure data for visualization
     structured_data = [Point(range=point.range, angle=point.angle) for point in scan]
-    if significant_buffer.last_record > 1:
-        reference_points = aux.get_numpy_array_from_points(
-            points=significant_buffer.get_lidar()
-        )
-    else:
-        reference_points = aux.get_numpy_array_from_points(points=structured_data)
-    points = aux.get_numpy_array_from_points(points=structured_data)
-    history, structured_data = icp(reference_points=reference_points, points=points)
-    structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
+    
+    # Performing ICP before segmentation
+
+    # if significant_buffer.last_record > 1:
+    #     reference_points = aux.get_numpy_array_from_points(
+    #         points=significant_buffer.get_lidar()
+    #     )
+    # else:
+    #     reference_points = aux.get_numpy_array_from_points(points=structured_data)
+    # points = aux.get_numpy_array_from_points(points=structured_data)
+    # history, structured_data = icp(reference_points=reference_points, points=points)
+    # structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
 
     segments = split_and_merge.segment_lidar_data(scan_points=structured_data)
     joined_segments = split_and_merge.join_segments_that_have_close_boundaries(
@@ -206,32 +209,17 @@ def animate(
         disp = segment.avg_displacement
 
         center_speed = segment.avg_displacement.range / time_step
+        if center_speed < GlobalConfig.SPEED_THRESHOLD:
+            continue
 
-        shape_patch = None
-        if shape.shape_type == "circle":
-            shape_patch = Circle(
-                (shape.center.x, shape.center.y),
-                shape.significant_length / 2,
-                color="r",
-                alpha=0.3,
-            )
-        else:
-            shape_patch = Rectangle(
-                xy=(shape.center.x, shape.center.y),
-                width=shape.significant_length,
-                height=shape.significant_length,
-                angle=180 * (segment.center.angle + shape.angle) / math.pi,  # type: ignore
-                color="r",
-                alpha=0.3,
-            )
+        shape_patch = shape.get_patch(segment=segment)
 
         if shape_patch:
             ax.add_patch(shape_patch)
 
-        if center_speed < GlobalConfig.SPEED_THRESHOLD:
-            continue
-
-        shape_center = shape_patch.get_center()
+        shape_center = aux.get_numpy_array_from_points([segment.center])
+        if shape_patch is not None:
+            shape_center = shape_patch.get_center()
 
         lidar.quiver(
             *np.array([shape_center[0], shape_center[1]]),

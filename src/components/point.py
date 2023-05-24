@@ -26,6 +26,9 @@ class Point:
             return self
         return Point.init_from_rectangular(x=self.x * abs(factor), y=self.y * abs(factor))
 
+    def get_projection(self):
+        return self.range*math.cos(self.angle)
+
     @classmethod
     def init_from_rectangular(cls, x: float, y: float):
         radius = math.sqrt(x**2 + y**2)
