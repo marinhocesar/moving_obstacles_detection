@@ -129,16 +129,27 @@ def get_displacement_for_significant_points(
     compare_real_sig = all_real_significant[idx]
     compare_apparent_sig = all_apparent_significant[idx]
 
+    if len(compare_real_sig) == 0 and len(compare_apparent_sig) == 0:
+        return displacement_real_significant, displacement_apparent_significant
+
     # evaluating real significant points
     for point in last_real_significant:
         distances_real_sig = [
             aux.get_distance_between_data_points(point, other_point)
             for other_point in compare_real_sig
         ]
+        if len(distances_real_sig) == 0:
+            distances_real_sig = [0.0]
+            compare_real_sig = [point]
+
         distances_apparent_sig = [
             aux.get_distance_between_data_points(point, other_point)
             for other_point in compare_apparent_sig
         ]
+        if len(distances_apparent_sig) == 0:
+            distances_apparent_sig = [0.0]
+            compare_apparent_sig = [point]
+
         closest_real_point = compare_real_sig[
             distances_real_sig.index(min(distances_real_sig))
         ]
@@ -165,10 +176,18 @@ def get_displacement_for_significant_points(
             aux.get_distance_between_data_points(point, other_point)
             for other_point in compare_real_sig
         ]
+        if len(distances_real_sig) == 0:
+            distances_real_sig = [0.0]
+            compare_real_sig = [point]
+
         distances_apparent_sig = [
             aux.get_distance_between_data_points(point, other_point)
             for other_point in compare_apparent_sig
         ]
+        if len(distances_apparent_sig) == 0:
+            distances_apparent_sig = [0.0]
+            compare_apparent_sig = [point]
+
         closest_real_point = compare_real_sig[
             distances_real_sig.index(min(distances_real_sig))
         ]
