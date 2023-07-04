@@ -82,6 +82,7 @@ def animate(
         )
     else:
         reference_points = aux.get_numpy_array_from_points(points=structured_data)
+
     points = aux.get_numpy_array_from_points(points=structured_data)
     history, structured_data = icp(reference_points=reference_points, points=points)
     structured_data = aux.get_points_from_numpy_array(numpy_array=structured_data)
@@ -90,6 +91,12 @@ def animate(
     joined_segments = split_and_merge.join_segments_that_have_close_boundaries(
         segments=segments
     )
+
+    if GlobalConfig.DEBUG:
+        zero_angle_line = [Point(range=a / 100, angle=0) for a in range(1, 100)]
+        forty_five_line = [Point(range=a / 100, angle=3.14 / 4) for a in range(1, 100)]
+        line = Object(points=zero_angle_line + forty_five_line)
+        segments.append(line)
 
     distances = [seg.distance_to_center for seg in joined_segments]
     max_d = GlobalConfig.MAX_RANGE
@@ -177,11 +184,11 @@ def animate(
         apparent_displacements = dict()
 
         for point in real_sig:
-            displacement: Point = avg_displ_real[point]
+            displacement: Point = avg_displ_real.get(point, Point(0, 0))
             real_displacements[point] = displacement
 
         for point in apparent_sig:
-            displacement: Point = avg_displ_apparent[point]
+            displacement: Point = avg_displ_apparent.get(point, Point(0, 0))
             apparent_displacements[point] = displacement
 
         segment.register_displacement_real_significant_points(real_displacements)
@@ -256,7 +263,8 @@ def animate(
     publisher.pub.publish(msg)
     et = time.time()
     frame_time = et - st
-    print("total", frame_time, "s")
+    if GlobalConfig.DEBUG is True:
+        print("total", frame_time, "s")
 
 
 # Main

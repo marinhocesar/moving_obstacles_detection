@@ -1,5 +1,6 @@
 import math
 from typing import List, Tuple
+
 # from aux.icp import icp
 
 from aux.global_config import GlobalConfig
@@ -248,6 +249,10 @@ def get_avg_displacement_for_significant_points(
         compare_apparent_displ = all_apparent_displacement[idx]
         compare = {**compare_real_displ, **compare_apparent_displ}
 
+        if len(compare) == 0:
+            empty_displ = dict()
+            return empty_displ, empty_displ
+
         for point in displ_real.keys():
             closest_point = get_closest_point(
                 point=point,
@@ -297,7 +302,11 @@ def get_displacement(
 
 def get_avg_displacement(displacements: List[Point]) -> Point:
     no_displacement = Point(0, 0)
-    real_displacements = [disp for disp in displacements if disp.range > GlobalConfig.DISPLACEMENT_THRESHOLD]
+    real_displacements = [
+        disp
+        for disp in displacements
+        if disp.range > GlobalConfig.DISPLACEMENT_THRESHOLD
+    ]
     # real_displacements = [disp for disp in displacements]
     n = len(real_displacements)
     if n < 1:
@@ -310,14 +319,11 @@ def get_avg_displacement(displacements: List[Point]) -> Point:
     v_x = math.sqrt(sum([(xi - avg_x) ** 2 for xi in x_pos]) / n)
     v_y = math.sqrt(sum([(yi - avg_y) ** 2 for yi in y_pos]) / n)
 
-    if (
-        v_x < GlobalConfig.VARIANCE_THRESHOLD
-        and v_y < GlobalConfig.VARIANCE_THRESHOLD
-    ):
+    if v_x < GlobalConfig.VARIANCE_THRESHOLD and v_y < GlobalConfig.VARIANCE_THRESHOLD:
         return no_displacement
 
     avg_disp = Point.init_from_rectangular(x=avg_x, y=avg_y)
-    
+
     if avg_disp.range < GlobalConfig.DISPLACEMENT_THRESHOLD:
         return no_displacement
 

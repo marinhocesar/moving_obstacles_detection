@@ -1,12 +1,13 @@
 import math
+
 from typing import Tuple
 
 
 class Point:
     def __init__(self, range: float, angle: float):
         self.range = range
-        self.angle = angle
-        # self.angle = angle if angle >= 0 else (2 * math.pi + angle)
+        # self.angle = angle
+        self.angle = angle if angle >= 0 else (2 * math.pi + angle)
         self.x, self.y = self.get_rectangular()
 
     def get_rectangular(self) -> Tuple[float, float]:
@@ -43,4 +44,4 @@ class Point:
 
     def __repr__(self) -> str:
         x, y = self.get_rectangular()
-        return f"(\n\trange:{self.range},\n\tangle:{self.angle},\n\tx:{x},\n\ty:{y}\n)"
+        return f"(\n\trange:{self.range},\n\tangle:{self.angle*180/math.pi},\n\tx:{x},\n\ty:{y}\n)"

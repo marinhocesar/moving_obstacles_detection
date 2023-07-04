@@ -1,13 +1,14 @@
 class GlobalConfig:
+    DEBUG = False
     SEGMENTATION_THRESHOLD = 0.1
     EXCLUSION_THRESHOLD = 25  # degrees
-    MAX_SKIPPED = 5  # maximum skipped points
+    MAX_SKIPPED = -1  # maximum skipped points
     MIN_ANGLE = 40
     MAX_ANGLE = 140
     ECCENTRICITY_THRESHOLD_COEFFICIENT = 1 / 5
-    MIN_RANGE = 0.1
+    MIN_RANGE = -1
     MAX_RANGE = 0.75
-    SHOULD_JOIN = False
+    SHOULD_JOIN = True
     MAX_ALLOWED_MEASURE_DIFF = 0.1
     SHOULD_RENDER_FIT_CURVE = False
 
@@ -26,7 +27,7 @@ class GlobalConfig:
     DIFFERENCE_FOR_DISPLACEMENT = 2
     BUFFER_SIZE = 10
     DISPLACEMENT_THRESHOLD = 0.05
-    VARIANCE_THRESHOLD = 0.04
+    VARIANCE_THRESHOLD = 0.01
     ANIMATION_INTERVAL = 1  # Delay between frames in milliseconds.
 
     VECTOR_SCALING = 1
